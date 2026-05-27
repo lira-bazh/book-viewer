@@ -2,7 +2,7 @@ import { type ChangeEvent, useRef, useState } from "react";
 import { Upload } from "lucide-react";
 
 import { parseBooksFile } from "@/features/FileUploader/parseBooksFile";
-import { useBooksStore } from "@/shared/store/books-store";
+import { useBooksStore } from "@/shared/store/booksStore";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 

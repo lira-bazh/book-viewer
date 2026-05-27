@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import FileUploader from "@/features/FileUploader/FileUploader";
-import { useBooksStore } from "@/shared/store/books-store";
+import { useBooksStore } from "@/shared/store/booksStore";
 
 const validBooks = [
   {
