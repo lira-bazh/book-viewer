@@ -1,3 +1,4 @@
+import { Card } from "@/shared/ui/card";
 import type { TableData } from "@/shared/types/table-data";
 
 type DataTableProps = {
@@ -7,25 +8,23 @@ type DataTableProps = {
 function DataTable({ data }: DataTableProps) {
   if (!data) {
     return (
-      <div className="flex min-h-48 items-center justify-center rounded-md border border-border text-sm text-muted-foreground">
+      <Card className="flex min-h-48 items-center justify-center p-6 text-sm text-muted-foreground">
         Данные появятся после загрузки файла
-      </div>
+      </Card>
     );
   }
 
   if (data.columns.length === 0) {
     return (
-      <div className="flex min-h-48 items-center justify-center rounded-md border border-border text-sm text-muted-foreground">
+      <Card className="flex min-h-48 items-center justify-center p-6 text-sm text-muted-foreground">
         Файл пустой
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-md border border-border">
-      <div className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
-        {data.fileName}
-      </div>
+    <Card className="overflow-hidden">
+      <div className="border-b border-border px-6 py-4 text-sm font-medium">{data.fileName}</div>
       <div className="overflow-auto">
         <table className="w-full min-w-max border-collapse text-left text-sm">
           <thead className="bg-muted text-muted-foreground">
@@ -53,7 +52,7 @@ function DataTable({ data }: DataTableProps) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }
 
