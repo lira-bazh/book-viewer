@@ -11,6 +11,7 @@ const books: Book[] = [
     authors: ["First Author"],
     url: "https://example.com/short-audio",
     description: "Short description",
+    genre: "Programming",
     audiobook_duration_minutes: 90,
     yandex_books_urls: ["https://books.yandex.ru/books/short-audio"],
     litres_urls: [],
@@ -20,6 +21,7 @@ const books: Book[] = [
     authors: ["Second Author", "Third Author"],
     url: "https://example.com/long-audio",
     description: "Long description",
+    genre: null,
     audiobook_duration_minutes: 150,
     yandex_books_urls: [],
     litres_urls: ["https://www.litres.ru/book/long-audio"],
@@ -41,16 +43,25 @@ function getRowTexts() {
   return getBodyRows().map((row) => row.textContent ?? "");
 }
 
-function getFilterSelect(label: "Яндекс.Книги" | "Литрес") {
-  const [yandexBooksFilter, litresFilter] = screen.getAllByRole("combobox");
+function getFilterSelect(label: "Жанр" | "Яндекс.Книги" | "Литрес") {
+  const [genreFilter, yandexBooksFilter, litresFilter] = screen.getAllByRole("combobox");
+
+  if (label === "Жанр") {
+    return genreFilter;
+  }
 
   return label === "Яндекс.Книги" ? yandexBooksFilter : litresFilter;
 }
 
-function selectOption(label: "Яндекс.Книги" | "Литрес", value: string) {
-  fireEvent.change(getFilterSelect(label), {
-    target: { value },
+function selectOption(label: "Жанр" | "Яндекс.Книги" | "Литрес", value: string) {
+  const optionLabel = value === "present" ? "Есть" : value === "missing" ? "Нет" : value;
+
+  fireEvent.pointerDown(getFilterSelect(label), {
+    button: 0,
+    ctrlKey: false,
+    pointerType: "mouse",
   });
+  fireEvent.click(screen.getByRole("option", { name: optionLabel }));
 }
 
 beforeEach(() => {
@@ -82,6 +93,9 @@ describe("DataTable", () => {
       "https://example.com/short-audio",
     );
     expect(screen.getByText("Short description")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Жанр" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "Programming" })).toBeInTheDocument();
+    expect(screen.queryByText("null")).not.toBeInTheDocument();
     expect(screen.getByText("1 ч 30 мин")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Яндекс" })).toHaveAttribute(
       "href",
@@ -135,6 +149,17 @@ describe("DataTable", () => {
     expect(screen.queryByText("Short Audio")).not.toBeInTheDocument();
     expect(screen.getByText("Long Audio")).toBeInTheDocument();
     expect(screen.getByText("No Duration")).toBeInTheDocument();
+  });
+
+  it("filters books by genre", () => {
+    useBooksStore.setState({ books });
+    render(<DataTable />);
+
+    selectOption("Жанр", "Programming");
+
+    expect(screen.getByText("Short Audio")).toBeInTheDocument();
+    expect(screen.queryByText("Long Audio")).not.toBeInTheDocument();
+    expect(screen.queryByText("No Duration")).not.toBeInTheDocument();
   });
 
   it("filters books by Litres link availability", () => {

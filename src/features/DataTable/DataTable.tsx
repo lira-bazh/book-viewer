@@ -2,8 +2,10 @@ import { useMemo, useState } from "react";
 import { Card } from "@/shared/ui/card";
 import { useBooksStore } from "@/shared/store/booksStore";
 import DataTableFilters, {
+  type GenreFilter,
   type LinkAvailabilityFilter,
 } from "@/features/DataTable/DataTableFilters/DataTableFilters";
+import BookGenre from "@/features/DataTable/BookGenre/BookGenre";
 import BookDuration from "@/features/DataTable/BookDuration/BookDuration";
 import BookDescription from "@/features/DataTable/BookDescription/BookDescription";
 import BookTitleCell from "@/features/DataTable/BookTitleCell/BookTitleCell";
@@ -22,12 +24,23 @@ function matchesLinkAvailabilityFilter(urls: string[], filter: LinkAvailabilityF
 
 function DataTable() {
   const books = useBooksStore((state) => state.books);
+  const [genreFilter, setGenreFilter] = useState<GenreFilter>("all");
   const [durationSortDirection, setDurationSortDirection] = useState<DurationSortDirection>(null);
   const [yandexBooksFilter, setYandexBooksFilter] = useState<LinkAvailabilityFilter>("all");
   const [litresFilter, setLitresFilter] = useState<LinkAvailabilityFilter>("all");
+  const genreOptions = useMemo(
+    () =>
+      [
+        ...new Set(
+          books.map((book) => book.genre).filter((genre): genre is string => Boolean(genre)),
+        ),
+      ].sort((firstGenre, secondGenre) => firstGenre.localeCompare(secondGenre)),
+    [books],
+  );
   const visibleBooks = useMemo(() => {
     const filteredBooks = books.filter(
       (book) =>
+        (genreFilter === "all" || book.genre === genreFilter) &&
         matchesLinkAvailabilityFilter(book.yandex_books_urls, yandexBooksFilter) &&
         matchesLinkAvailabilityFilter(book.litres_urls, litresFilter),
     );
@@ -56,7 +69,7 @@ function DataTable() {
         ? firstDuration - secondDuration
         : secondDuration - firstDuration;
     });
-  }, [books, durationSortDirection, litresFilter, yandexBooksFilter]);
+  }, [books, durationSortDirection, genreFilter, litresFilter, yandexBooksFilter]);
   const durationSortLabel = durationSortDirection === "asc" ? "по убыванию" : "по возрастанию";
 
   function handleDurationSortChange() {
@@ -74,7 +87,10 @@ function DataTable() {
   return (
     <Card className="overflow-hidden">
       <DataTableFilters
+        genreFilter={genreFilter}
+        genreOptions={genreOptions}
         litresFilter={litresFilter}
+        onGenreFilterChange={setGenreFilter}
         onLitresFilterChange={setLitresFilter}
         onYandexBooksFilterChange={setYandexBooksFilter}
         yandexBooksFilter={yandexBooksFilter}
@@ -84,7 +100,10 @@ function DataTable() {
           <thead className="bg-muted text-muted-foreground">
             <tr>
               <th className="w-[25%] border-b border-border px-4 py-3 font-medium">Книга</th>
-              <th className="w-[39%] border-b border-border px-4 py-3 font-medium">Описание</th>
+              <th className="w-[31%] border-b border-border px-4 py-3 font-medium">Описание</th>
+              <th className="w-[8%] border-b border-border px-4 py-3 text-center font-medium">
+                Жанр
+              </th>
               <th className="w-[12%] border-b border-border px-4 py-3 text-center font-medium">
                 <button
                   aria-label={`Сортировать длительность ${durationSortLabel}`}
@@ -111,7 +130,7 @@ function DataTable() {
               <tr>
                 <td
                   className="border-b border-border px-4 py-8 text-center text-muted-foreground"
-                  colSpan={5}
+                  colSpan={6}
                 >
                   По выбранным фильтрам ничего не найдено
                 </td>
@@ -129,6 +148,9 @@ function DataTable() {
                 </td>
                 <td className="border-b border-border px-4 py-3 align-middle text-center text-muted-foreground break-words">
                   <BookDescription description={book.description} />
+                </td>
+                <td className="border-b border-border px-4 py-3 text-center align-middle text-muted-foreground whitespace-normal">
+                  <BookGenre genre={book.genre} />
                 </td>
                 <td className="border-b border-border px-4 py-3 text-center align-middle text-muted-foreground whitespace-nowrap">
                   <BookDuration durationMinutes={book.audiobook_duration_minutes} />

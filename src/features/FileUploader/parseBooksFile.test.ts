@@ -19,6 +19,7 @@ describe("parseBooksFile", () => {
     const bookWithOptionalFields = {
       ...validBook,
       description: "A practical guide to software architecture.",
+      genre: "Software development",
       image: "https://example.com/cover.jpg",
       audiobook_duration_minutes: 1024,
     };
@@ -26,6 +27,15 @@ describe("parseBooksFile", () => {
     expect(parseBooksFile(JSON.stringify([bookWithOptionalFields]))).toEqual([
       bookWithOptionalFields,
     ]);
+  });
+
+  it("allows null genre", () => {
+    const bookWithNullGenre = {
+      ...validBook,
+      genre: null,
+    };
+
+    expect(parseBooksFile(JSON.stringify([bookWithNullGenre]))).toEqual([bookWithNullGenre]);
   });
 
   it("throws when content is not valid JSON", () => {

@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 const DESCRIPTION_PREVIEW_LENGTH = 280;
 
 type BookDescriptionProps = {
@@ -5,6 +7,8 @@ type BookDescriptionProps = {
 };
 
 function BookDescription({ description }: BookDescriptionProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (!description) {
     return <span className="text-muted-foreground/70">Нет описания</span>;
   }
@@ -16,14 +20,31 @@ function BookDescription({ description }: BookDescriptionProps) {
   const preview = `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trimEnd()}...`;
 
   return (
-    <details className="group text-justify">
-      <summary className="cursor-pointer list-none">
-        <span className="whitespace-pre-wrap group-open:hidden">{preview}</span>
-        <span className="ml-2 text-primary underline group-open:hidden">Показать полностью</span>
-        <span className="hidden text-primary underline group-open:inline">Свернуть</span>
-      </summary>
-      <p className="mt-2 whitespace-pre-wrap">{description}</p>
-    </details>
+    <div className="text-justify">
+      {isExpanded ? (
+        <>
+          <p className="whitespace-pre-wrap">{description}</p>
+          <button
+            className="mt-2 text-primary underline"
+            onClick={() => setIsExpanded(false)}
+            type="button"
+          >
+            Свернуть
+          </button>
+        </>
+      ) : (
+        <p className="whitespace-pre-wrap">
+          {preview}
+          <button
+            className="ml-2 text-primary underline"
+            onClick={() => setIsExpanded(true)}
+            type="button"
+          >
+            Показать полностью
+          </button>
+        </p>
+      )}
+    </div>
   );
 }
 

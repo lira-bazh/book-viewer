@@ -1,7 +1,13 @@
+import FilterSelect from "@/features/DataTable/DataTableFilters/FilterSelect/FilterSelect";
+
 export type LinkAvailabilityFilter = "all" | "present" | "missing";
+export type GenreFilter = "all" | string;
 
 type DataTableFiltersProps = {
+  genreFilter: GenreFilter;
+  genreOptions: string[];
   litresFilter: LinkAvailabilityFilter;
+  onGenreFilterChange: (filter: GenreFilter) => void;
   onLitresFilterChange: (filter: LinkAvailabilityFilter) => void;
   onYandexBooksFilterChange: (filter: LinkAvailabilityFilter) => void;
   yandexBooksFilter: LinkAvailabilityFilter;
@@ -14,43 +20,39 @@ const filterOptions: Array<{ label: string; value: LinkAvailabilityFilter }> = [
 ];
 
 function DataTableFilters({
+  genreFilter,
+  genreOptions,
   litresFilter,
+  onGenreFilterChange,
   onLitresFilterChange,
   onYandexBooksFilterChange,
   yandexBooksFilter,
 }: DataTableFiltersProps) {
+  const genreSelectOptions = [
+    { label: "Все", value: "all" },
+    ...genreOptions.map((genre) => ({ label: genre, value: genre })),
+  ];
+
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3 text-sm">
-      <label className="flex items-center gap-2">
-        <span className="text-muted-foreground">Яндекс.Книги</span>
-        <select
-          className="h-9 rounded-md border border-input bg-background px-3 text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          onChange={(event) =>
-            onYandexBooksFilterChange(event.target.value as LinkAvailabilityFilter)
-          }
-          value={yandexBooksFilter}
-        >
-          {filterOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="flex items-center gap-2">
-        <span className="text-muted-foreground">Литрес</span>
-        <select
-          className="h-9 rounded-md border border-input bg-background px-3 text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          onChange={(event) => onLitresFilterChange(event.target.value as LinkAvailabilityFilter)}
-          value={litresFilter}
-        >
-          {filterOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+    <div className="grid gap-3 border-b border-border bg-muted/30 px-4 py-3 sm:flex sm:flex-wrap sm:items-end">
+      <FilterSelect
+        label="Жанр"
+        onChange={onGenreFilterChange}
+        options={genreSelectOptions}
+        value={genreFilter}
+      />
+      <FilterSelect
+        label="Яндекс.Книги"
+        onChange={(filter) => onYandexBooksFilterChange(filter as LinkAvailabilityFilter)}
+        options={filterOptions}
+        value={yandexBooksFilter}
+      />
+      <FilterSelect
+        label="Литрес"
+        onChange={(filter) => onLitresFilterChange(filter as LinkAvailabilityFilter)}
+        options={filterOptions}
+        value={litresFilter}
+      />
     </div>
   );
 }

@@ -22,6 +22,7 @@ function isBook(value: unknown): value is Book {
 
   const hasValidOptionalFields =
     (value.description === undefined || typeof value.description === "string") &&
+    (value.genre === undefined || value.genre === null || typeof value.genre === "string") &&
     (value.image === undefined || typeof value.image === "string") &&
     (value.audiobook_duration_minutes === undefined ||
       typeof value.audiobook_duration_minutes === "number");
