@@ -77,6 +77,10 @@ describe("DataTable", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
     expect(screen.getByText("Short Audio")).toBeInTheDocument();
     expect(screen.getByText("First Author")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Ссылка на книгу" })[0]).toHaveAttribute(
+      "href",
+      "https://example.com/short-audio",
+    );
     expect(screen.getByText("Short description")).toBeInTheDocument();
     expect(screen.getByText("1 ч 30 мин")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Яндекс" })).toHaveAttribute(

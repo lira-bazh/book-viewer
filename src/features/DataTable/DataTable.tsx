@@ -120,7 +120,12 @@ function DataTable() {
             {visibleBooks.map((book) => (
               <tr className="odd:bg-background even:bg-muted/35" key={book.url}>
                 <td className="border-b border-border px-4 py-3 align-middle font-medium break-words whitespace-normal">
-                  <BookTitleCell authors={book.authors} image={book.image} title={book.title} />
+                  <BookTitleCell
+                    authors={book.authors}
+                    image={book.image}
+                    title={book.title}
+                    url={book.url}
+                  />
                 </td>
                 <td className="border-b border-border px-4 py-3 align-middle text-center text-muted-foreground break-words">
                   <BookDescription description={book.description} />
