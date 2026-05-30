@@ -1,11 +1,14 @@
+import BookGenre from "@/features/DataTable/BookCard/BookGenre/BookGenre";
+
 type BookTitleCellProps = {
   authors: string[];
+  genre?: string | null;
   image?: string;
   title: string;
   url: string;
 };
 
-function BookTitleCell({ authors, image, title, url }: BookTitleCellProps) {
+function BookTitleCell({ authors, genre, image, title, url }: BookTitleCellProps) {
   return (
     <div className="flex items-center gap-3">
       {image ? (
@@ -25,6 +28,11 @@ function BookTitleCell({ authors, image, title, url }: BookTitleCellProps) {
         <div className="break-words text-xs font-normal text-muted-foreground">
           {authors.join(", ")}
         </div>
+        {genre ? (
+          <div className="break-words text-xs font-normal text-muted-foreground">
+            <BookGenre genre={genre} />
+          </div>
+        ) : null}
         <a
           className="inline-block break-all text-xs font-normal text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           href={url}

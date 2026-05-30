@@ -8,6 +8,20 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+function isAudiobook(value: unknown) {
+  return (
+    isRecord(value) &&
+    typeof value.url === "string" &&
+    (value.title === null || typeof value.title === "string") &&
+    (value.narrator === null || typeof value.narrator === "string") &&
+    (value.duration === null || typeof value.duration === "number")
+  );
+}
+
+function isAudiobookArray(value: unknown) {
+  return Array.isArray(value) && value.every(isAudiobook);
+}
+
 function isBook(value: unknown): value is Book {
   if (!isRecord(value)) {
     return false;
@@ -18,7 +32,8 @@ function isBook(value: unknown): value is Book {
     isStringArray(value.authors) &&
     typeof value.url === "string" &&
     isStringArray(value.yandex_books_urls) &&
-    isStringArray(value.litres_urls);
+    isStringArray(value.litres_urls) &&
+    isAudiobookArray(value.audiobooks_urls);
 
   const hasValidOptionalFields =
     (value.description === undefined || typeof value.description === "string") &&

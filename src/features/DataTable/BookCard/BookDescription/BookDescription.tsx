@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const DESCRIPTION_PREVIEW_LENGTH = 280;
+const DESCRIPTION_PREVIEW_LENGTH = 600;
 
 type BookDescriptionProps = {
   description?: string;
@@ -14,7 +14,7 @@ function BookDescription({ description }: BookDescriptionProps) {
   }
 
   if (description.length <= DESCRIPTION_PREVIEW_LENGTH) {
-    return <p className="whitespace-pre-wrap text-center">{description}</p>;
+    return <p className="whitespace-pre-wrap text-justify">{description}</p>;
   }
 
   const preview = `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trimEnd()}...`;

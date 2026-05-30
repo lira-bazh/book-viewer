@@ -8,6 +8,7 @@ const validBook = {
   url: "https://example.com/clean-architecture",
   yandex_books_urls: ["https://books.yandex.ru/book/clean-architecture"],
   litres_urls: ["https://www.litres.ru/book/clean-architecture"],
+  audiobooks_urls: [],
 };
 
 describe("parseBooksFile", () => {
@@ -22,6 +23,20 @@ describe("parseBooksFile", () => {
       genre: "Software development",
       image: "https://example.com/cover.jpg",
       audiobook_duration_minutes: 1024,
+      audiobooks_urls: [
+        {
+          url: "https://www.litres.ru/audiobook/clean-architecture",
+          title: null,
+          narrator: "Robert C. Martin",
+          duration: 1024,
+        },
+        {
+          url: "https://books.yandex.ru/audiobooks/clean-architecture",
+          title: "Clean Architecture",
+          narrator: null,
+          duration: null,
+        },
+      ],
     };
 
     expect(parseBooksFile(JSON.stringify([bookWithOptionalFields]))).toEqual([
@@ -52,6 +67,14 @@ describe("parseBooksFile", () => {
     );
   });
 
+  it("throws when audiobooks list is missing", () => {
+    const { audiobooks_urls, ...bookWithoutAudiobooks } = validBook;
+
+    expect(() => parseBooksFile(JSON.stringify([bookWithoutAudiobooks]))).toThrow(
+      "Invalid books file structure",
+    );
+  });
+
   it("throws when required array fields contain non-string values", () => {
     expect(() =>
       parseBooksFile(
@@ -72,6 +95,24 @@ describe("parseBooksFile", () => {
           {
             ...validBook,
             audiobook_duration_minutes: "1024",
+          },
+        ]),
+      ),
+    ).toThrow("Invalid books file structure");
+
+    expect(() =>
+      parseBooksFile(
+        JSON.stringify([
+          {
+            ...validBook,
+            audiobooks_urls: [
+              {
+                url: "https://www.litres.ru/audiobook/clean-architecture",
+                title: null,
+                narrator: "Robert C. Martin",
+                duration: "1024",
+              },
+            ],
           },
         ]),
       ),

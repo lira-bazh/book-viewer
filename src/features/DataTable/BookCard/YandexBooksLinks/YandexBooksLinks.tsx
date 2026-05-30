@@ -1,8 +1,8 @@
-type LitresLinksProps = {
+type YandexBooksLinksProps = {
   urls: string[];
 };
 
-function LitresLinks({ urls }: LitresLinksProps) {
+function YandexBooksLinks({ urls }: YandexBooksLinksProps) {
   if (urls.length === 0) {
     return null;
   }
@@ -28,7 +28,7 @@ function LitresLinks({ urls }: LitresLinksProps) {
     });
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-start gap-1">
       {sortedLinks.map(({ categoryIndex, isAudiobook, url }) => (
         <a
           className="text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -37,7 +37,7 @@ function LitresLinks({ urls }: LitresLinksProps) {
           rel="noreferrer"
           target="_blank"
         >
-          {isAudiobook ? "Аудиокнига" : "Литрес"}
+          {isAudiobook ? "Аудиокнига" : "Яндекс"}
           {sortedLinks.length > 1 ? ` ${categoryIndex}` : ""}
         </a>
       ))}
@@ -45,4 +45,4 @@ function LitresLinks({ urls }: LitresLinksProps) {
   );
 }
 
-export default LitresLinks;
+export default YandexBooksLinks;

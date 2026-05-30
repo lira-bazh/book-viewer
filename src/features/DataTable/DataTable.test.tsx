@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import DataTable from "@/features/DataTable/DataTable";
@@ -13,8 +13,31 @@ const books: Book[] = [
     description: "Short description",
     genre: "Programming",
     audiobook_duration_minutes: 90,
-    yandex_books_urls: ["https://books.yandex.ru/books/short-audio"],
+    yandex_books_urls: [
+      "https://books.yandex.ru/books/short-audio",
+      "https://books.yandex.ru/audiobooks/short-audio",
+    ],
     litres_urls: [],
+    audiobooks_urls: [
+      {
+        url: "https://books.yandex.ru/audiobooks/short-audio",
+        title: "Short Audio в Яндексе",
+        narrator: null,
+        duration: 90,
+      },
+      {
+        url: "https://www.litres.ru/audiobook/short-audio",
+        title: "Short Audio в Литресе",
+        narrator: null,
+        duration: 90,
+      },
+      {
+        url: "https://rutracker.org/forum/viewtopic.php?t=123456",
+        title: "Short Audio на Rutracker",
+        narrator: null,
+        duration: null,
+      },
+    ],
   },
   {
     title: "Long Audio",
@@ -24,7 +47,11 @@ const books: Book[] = [
     genre: null,
     audiobook_duration_minutes: 150,
     yandex_books_urls: [],
-    litres_urls: ["https://www.litres.ru/book/long-audio"],
+    litres_urls: [
+      "https://www.litres.ru/book/long-audio",
+      "https://www.litres.ru/audiobook/long-audio",
+    ],
+    audiobooks_urls: [],
   },
   {
     title: "No Duration",
@@ -32,41 +59,22 @@ const books: Book[] = [
     url: "https://example.com/no-duration",
     yandex_books_urls: [],
     litres_urls: [],
+    audiobooks_urls: [],
   },
 ];
-
-function getBodyRows() {
-  return within(screen.getAllByRole("rowgroup")[1]).getAllByRole("row");
-}
-
-function getRowTexts() {
-  return getBodyRows().map((row) => row.textContent ?? "");
-}
-
-function getFilterSelect(label: "Жанр" | "Яндекс.Книги" | "Литрес") {
-  const [genreFilter, yandexBooksFilter, litresFilter] = screen.getAllByRole("combobox");
-
-  if (label === "Жанр") {
-    return genreFilter;
-  }
-
-  return label === "Яндекс.Книги" ? yandexBooksFilter : litresFilter;
-}
-
-function selectOption(label: "Жанр" | "Яндекс.Книги" | "Литрес", value: string) {
-  const optionLabel = value === "present" ? "Есть" : value === "missing" ? "Нет" : value;
-
-  fireEvent.pointerDown(getFilterSelect(label), {
-    button: 0,
-    ctrlKey: false,
-    pointerType: "mouse",
-  });
-  fireEvent.click(screen.getByRole("option", { name: optionLabel }));
-}
 
 beforeEach(() => {
   useBooksStore.setState({ books: [] });
 });
+
+function selectFilter(label: "Жанр" | "Источник", value: string) {
+  fireEvent.pointerDown(screen.getByRole("combobox", { name: label }), {
+    button: 0,
+    ctrlKey: false,
+    pointerType: "mouse",
+  });
+  fireEvent.click(screen.getByRole("option", { name: value }));
+}
 
 afterEach(() => {
   cleanup();
@@ -78,6 +86,7 @@ describe("DataTable", () => {
 
     expect(screen.getByText("Данные появятся после загрузки файла")).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Список книг" })).not.toBeInTheDocument();
   });
 
   it("renders loaded books with details and links", () => {
@@ -85,7 +94,10 @@ describe("DataTable", () => {
 
     render(<DataTable />);
 
-    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Список книг" })).toBeInTheDocument();
+    expect(screen.getByText("Всего книг: 3")).toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(3);
     expect(screen.getByText("Short Audio")).toBeInTheDocument();
     expect(screen.getByText("First Author")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Ссылка на книгу" })[0]).toHaveAttribute(
@@ -93,8 +105,8 @@ describe("DataTable", () => {
       "https://example.com/short-audio",
     );
     expect(screen.getByText("Short description")).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Жанр" })).toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: "Programming" })).toBeInTheDocument();
+    expect(screen.getByText("Жанр")).toBeInTheDocument();
+    expect(screen.getByText("Programming")).toBeInTheDocument();
     expect(screen.queryByText("null")).not.toBeInTheDocument();
     expect(screen.getByText("1 ч 30 мин")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Яндекс" })).toHaveAttribute(
@@ -105,84 +117,54 @@ describe("DataTable", () => {
       "href",
       "https://www.litres.ru/book/long-audio",
     );
+    expect(
+      screen.getByRole("link", { name: "Яндекс.Книги Short Audio в Яндексе" }),
+    ).toHaveAttribute("href", "https://books.yandex.ru/audiobooks/short-audio");
+    expect(screen.getByRole("link", { name: "Литрес Short Audio в Литресе" })).toHaveAttribute(
+      "href",
+      "https://www.litres.ru/audiobook/short-audio",
+    );
+    expect(
+      screen.getByRole("link", { name: "Rutracker Short Audio на Rutracker" }),
+    ).toHaveAttribute("href", "https://rutracker.org/forum/viewtopic.php?t=123456");
     expect(screen.getByText("Нет описания")).toBeInTheDocument();
   });
 
-  it("sorts books by duration and keeps books without duration last", () => {
+  it("filters book cards by genre", () => {
     useBooksStore.setState({ books });
+
     render(<DataTable />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Сортировать длительность по возрастанию" }),
-    );
-
-    expect(getRowTexts()).toEqual([
-      expect.stringContaining("Short Audio"),
-      expect.stringContaining("Long Audio"),
-      expect.stringContaining("No Duration"),
-    ]);
-    expect(
-      screen.getByRole("button", { name: "Сортировать длительность по убыванию" }),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Сортировать длительность по убыванию" }));
-
-    expect(getRowTexts()).toEqual([
-      expect.stringContaining("Long Audio"),
-      expect.stringContaining("Short Audio"),
-      expect.stringContaining("No Duration"),
-    ]);
-  });
-
-  it("filters books by Yandex Books link availability", () => {
-    useBooksStore.setState({ books });
-    render(<DataTable />);
-
-    selectOption("Яндекс.Книги", "present");
-
-    expect(screen.getByText("Short Audio")).toBeInTheDocument();
-    expect(screen.queryByText("Long Audio")).not.toBeInTheDocument();
-    expect(screen.queryByText("No Duration")).not.toBeInTheDocument();
-
-    selectOption("Яндекс.Книги", "missing");
-
-    expect(screen.queryByText("Short Audio")).not.toBeInTheDocument();
-    expect(screen.getByText("Long Audio")).toBeInTheDocument();
-    expect(screen.getByText("No Duration")).toBeInTheDocument();
-  });
-
-  it("filters books by genre", () => {
-    useBooksStore.setState({ books });
-    render(<DataTable />);
-
-    selectOption("Жанр", "Programming");
+    selectFilter("Жанр", "Programming");
 
     expect(screen.getByText("Short Audio")).toBeInTheDocument();
     expect(screen.queryByText("Long Audio")).not.toBeInTheDocument();
     expect(screen.queryByText("No Duration")).not.toBeInTheDocument();
   });
 
-  it("filters books by Litres link availability", () => {
+  it("filters book cards by source including audiobook links", () => {
     useBooksStore.setState({ books });
+
     render(<DataTable />);
 
-    selectOption("Литрес", "present");
+    selectFilter("Источник", "Rutracker");
 
-    expect(screen.queryByText("Short Audio")).not.toBeInTheDocument();
-    expect(screen.getByText("Long Audio")).toBeInTheDocument();
+    expect(screen.getByText("Short Audio")).toBeInTheDocument();
+    expect(screen.queryByText("Long Audio")).not.toBeInTheDocument();
     expect(screen.queryByText("No Duration")).not.toBeInTheDocument();
   });
 
-  it("shows a message when filters hide all books", () => {
+  it("searches book cards by title and author", () => {
     useBooksStore.setState({ books });
+
     render(<DataTable />);
 
-    selectOption("Яндекс.Книги", "present");
-    selectOption("Литрес", "present");
+    fireEvent.change(screen.getByRole("textbox", { name: "Поиск" }), {
+      target: { value: "Second Author" },
+    });
 
-    expect(screen.getByText("По выбранным фильтрам ничего не найдено")).toBeInTheDocument();
     expect(screen.queryByText("Short Audio")).not.toBeInTheDocument();
-    expect(screen.queryByText("Long Audio")).not.toBeInTheDocument();
+    expect(screen.getByText("Long Audio")).toBeInTheDocument();
     expect(screen.queryByText("No Duration")).not.toBeInTheDocument();
   });
 });

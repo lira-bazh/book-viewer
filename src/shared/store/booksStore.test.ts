@@ -10,6 +10,7 @@ const books: Book[] = [
     url: "https://example.com/clean-architecture",
     yandex_books_urls: ["https://books.yandex.ru/book/clean-architecture"],
     litres_urls: ["https://www.litres.ru/book/clean-architecture"],
+    audiobooks_urls: [],
   },
   {
     title: "Domain-Driven Design",
@@ -17,6 +18,7 @@ const books: Book[] = [
     url: "https://example.com/domain-driven-design",
     yandex_books_urls: [],
     litres_urls: [],
+    audiobooks_urls: [],
   },
 ];
 

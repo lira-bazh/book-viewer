@@ -1,33 +1,64 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import { Card } from "@/shared/ui/card";
 import { useBooksStore } from "@/shared/store/booksStore";
-import DataTableFilters, {
-  type GenreFilter,
-  type LinkAvailabilityFilter,
-} from "@/features/DataTable/DataTableFilters/DataTableFilters";
-import BookGenre from "@/features/DataTable/BookGenre/BookGenre";
-import BookDuration from "@/features/DataTable/BookDuration/BookDuration";
-import BookDescription from "@/features/DataTable/BookDescription/BookDescription";
-import BookTitleCell from "@/features/DataTable/BookTitleCell/BookTitleCell";
-import LitresLinks from "@/features/DataTable/LitresLinks/LitresLinks";
-import YandexBooksLinks from "@/features/DataTable/YandexBooksLinks/YandexBooksLinks";
+import type { Book } from "@/shared/types/book";
+import BookCard from "@/features/DataTable/BookCard/BookCard";
+import DataTableHeader from "@/features/DataTable/DataTableHeader/DataTableHeader";
 
-type DurationSortDirection = "asc" | "desc" | null;
+type SourceFilter = "all" | "yandex" | "litres" | "rutracker";
 
-function matchesLinkAvailabilityFilter(urls: string[], filter: LinkAvailabilityFilter) {
-  if (filter === "all") {
+function matchesSource(url: string, sourceFilter: SourceFilter) {
+  if (sourceFilter === "all") {
     return true;
   }
 
-  return filter === "present" ? urls.length > 0 : urls.length === 0;
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+
+    if (sourceFilter === "yandex") {
+      return hostname === "books.yandex.ru";
+    }
+
+    if (sourceFilter === "litres") {
+      return hostname === "www.litres.ru" || hostname === "litres.ru";
+    }
+
+    return hostname === "rutracker.org" || hostname.endsWith(".rutracker.org");
+  } catch {
+    return false;
+  }
+}
+
+function bookMatchesSource(book: Book, sourceFilter: SourceFilter) {
+  if (sourceFilter === "all") {
+    return true;
+  }
+
+  return [
+    ...book.yandex_books_urls,
+    ...book.litres_urls,
+    ...book.audiobooks_urls.map((audiobook) => audiobook.url),
+  ].some((url) => matchesSource(url, sourceFilter));
+}
+
+function bookMatchesSearchQuery(book: Book, searchQuery: string) {
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+
+  if (normalizedSearchQuery.length === 0) {
+    return true;
+  }
+
+  return [book.title, ...book.authors].some((value) =>
+    value.toLowerCase().includes(normalizedSearchQuery),
+  );
 }
 
 function DataTable() {
   const books = useBooksStore((state) => state.books);
-  const [genreFilter, setGenreFilter] = useState<GenreFilter>("all");
-  const [durationSortDirection, setDurationSortDirection] = useState<DurationSortDirection>(null);
-  const [yandexBooksFilter, setYandexBooksFilter] = useState<LinkAvailabilityFilter>("all");
-  const [litresFilter, setLitresFilter] = useState<LinkAvailabilityFilter>("all");
+  const [genreFilter, setGenreFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const genreOptions = useMemo(
     () =>
       [
@@ -37,44 +68,22 @@ function DataTable() {
       ].sort((firstGenre, secondGenre) => firstGenre.localeCompare(secondGenre)),
     [books],
   );
-  const visibleBooks = useMemo(() => {
-    const filteredBooks = books.filter(
-      (book) =>
-        (genreFilter === "all" || book.genre === genreFilter) &&
-        matchesLinkAvailabilityFilter(book.yandex_books_urls, yandexBooksFilter) &&
-        matchesLinkAvailabilityFilter(book.litres_urls, litresFilter),
-    );
+  const visibleBooks = useMemo(
+    () =>
+      books.filter(
+        (book) =>
+          (genreFilter === "all" || book.genre === genreFilter) &&
+          bookMatchesSearchQuery(book, searchQuery) &&
+          bookMatchesSource(book, sourceFilter),
+      ),
+    [books, genreFilter, searchQuery, sourceFilter],
+  );
 
-    if (durationSortDirection === null) {
-      return filteredBooks;
+  useEffect(() => {
+    if (genreFilter !== "all" && !genreOptions.includes(genreFilter)) {
+      setGenreFilter("all");
     }
-
-    return [...filteredBooks].sort((firstBook, secondBook) => {
-      const firstDuration = firstBook.audiobook_duration_minutes;
-      const secondDuration = secondBook.audiobook_duration_minutes;
-
-      if (firstDuration === undefined && secondDuration === undefined) {
-        return 0;
-      }
-
-      if (firstDuration === undefined) {
-        return 1;
-      }
-
-      if (secondDuration === undefined) {
-        return -1;
-      }
-
-      return durationSortDirection === "asc"
-        ? firstDuration - secondDuration
-        : secondDuration - firstDuration;
-    });
-  }, [books, durationSortDirection, genreFilter, litresFilter, yandexBooksFilter]);
-  const durationSortLabel = durationSortDirection === "asc" ? "по убыванию" : "по возрастанию";
-
-  function handleDurationSortChange() {
-    setDurationSortDirection((currentDirection) => (currentDirection === "asc" ? "desc" : "asc"));
-  }
+  }, [genreFilter, genreOptions]);
 
   if (books.length === 0) {
     return (
@@ -85,88 +94,25 @@ function DataTable() {
   }
 
   return (
-    <Card className="overflow-hidden">
-      <DataTableFilters
+    <section aria-label="Список книг" className="grid gap-4">
+      <DataTableHeader
+        booksCount={books.length}
         genreFilter={genreFilter}
         genreOptions={genreOptions}
-        litresFilter={litresFilter}
         onGenreFilterChange={setGenreFilter}
-        onLitresFilterChange={setLitresFilter}
-        onYandexBooksFilterChange={setYandexBooksFilter}
-        yandexBooksFilter={yandexBooksFilter}
+        onSearchQueryChange={setSearchQuery}
+        onSourceFilterChange={(filter) => setSourceFilter(filter as SourceFilter)}
+        searchQuery={searchQuery}
+        sourceFilter={sourceFilter}
       />
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed border-collapse text-left text-sm">
-          <thead className="bg-muted text-muted-foreground">
-            <tr>
-              <th className="w-[25%] border-b border-border px-4 py-3 font-medium">Книга</th>
-              <th className="w-[31%] border-b border-border px-4 py-3 font-medium">Описание</th>
-              <th className="w-[8%] border-b border-border px-4 py-3 text-center font-medium">
-                Жанр
-              </th>
-              <th className="w-[12%] border-b border-border px-4 py-3 text-center font-medium">
-                <button
-                  aria-label={`Сортировать длительность ${durationSortLabel}`}
-                  className="mx-auto flex items-center justify-center gap-1 rounded-sm px-1 py-0.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                  onClick={handleDurationSortChange}
-                  type="button"
-                >
-                  <span>Длительность</span>
-                  {durationSortDirection !== null && (
-                    <span aria-hidden="true">{durationSortDirection === "asc" ? "↑" : "↓"}</span>
-                  )}
-                </button>
-              </th>
-              <th className="w-[14%] border-b border-border px-4 py-3 text-center font-medium">
-                Яндекс.Книги
-              </th>
-              <th className="w-[10%] border-b border-border px-4 py-3 text-center font-medium">
-                Литрес
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleBooks.length === 0 && (
-              <tr>
-                <td
-                  className="border-b border-border px-4 py-8 text-center text-muted-foreground"
-                  colSpan={6}
-                >
-                  По выбранным фильтрам ничего не найдено
-                </td>
-              </tr>
-            )}
-            {visibleBooks.map((book) => (
-              <tr className="odd:bg-background even:bg-muted/35" key={book.url}>
-                <td className="border-b border-border px-4 py-3 align-middle font-medium break-words whitespace-normal">
-                  <BookTitleCell
-                    authors={book.authors}
-                    image={book.image}
-                    title={book.title}
-                    url={book.url}
-                  />
-                </td>
-                <td className="border-b border-border px-4 py-3 align-middle text-center text-muted-foreground break-words">
-                  <BookDescription description={book.description} />
-                </td>
-                <td className="border-b border-border px-4 py-3 text-center align-middle text-muted-foreground whitespace-normal">
-                  <BookGenre genre={book.genre} />
-                </td>
-                <td className="border-b border-border px-4 py-3 text-center align-middle text-muted-foreground whitespace-nowrap">
-                  <BookDuration durationMinutes={book.audiobook_duration_minutes} />
-                </td>
-                <td className="border-b border-border px-4 py-3 text-center align-middle text-sm whitespace-nowrap">
-                  <YandexBooksLinks urls={book.yandex_books_urls} />
-                </td>
-                <td className="border-b border-border px-4 py-3 text-center align-middle text-sm whitespace-nowrap">
-                  <LitresLinks urls={book.litres_urls} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
+      {visibleBooks.length === 0 ? (
+        <Card className="flex min-h-32 items-center justify-center p-6 text-sm text-muted-foreground">
+          По выбранным фильтрам ничего не найдено
+        </Card>
+      ) : (
+        visibleBooks.map((book) => <BookCard book={book} key={book.url} />)
+      )}
+    </section>
   );
 }
 
